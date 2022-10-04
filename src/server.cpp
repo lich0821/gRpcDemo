@@ -2,6 +2,10 @@
 Server
 */
 
+#ifdef _WIN32
+#pragma warning(disable : 4251)
+#endif
+
 #include <iostream>
 #include <memory>
 #include <queue>
@@ -32,6 +36,12 @@ mutex gMutex;
 queue<Msg> gMsgQueue;
 condition_variable gCv;
 
+#ifdef _WIN32
+#define SLEEP(x) Sleep((x))
+#else
+#define SLEEP(x) sleep((x) / 1000)
+#endif
+
 void ProduceMsg(queue<Msg> *msg_queue)
 {
     random_device rd;  // 随机数生成器
@@ -57,7 +67,7 @@ void ProduceMsg(queue<Msg> *msg_queue)
         gCv.notify_all();
 
         // 模拟消息到达间隔
-        sleep(tmp / 1000);
+        SLEEP(tmp);
     }
 }
 

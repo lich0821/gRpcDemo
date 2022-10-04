@@ -2,6 +2,10 @@
 RPC Client
 */
 
+#ifdef _WIN32
+#pragma warning(disable : 4251)
+#endif
+
 #include <memory>
 
 #include <grpcpp/grpcpp.h>
