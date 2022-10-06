@@ -171,7 +171,6 @@ public:
 
     MsgTypes GetMsgTypes(void)
     {
-        bool ret;
         Empty empty;
         MsgTypes mt;
         ClientContext context;
@@ -198,7 +197,6 @@ public:
 
     Contacts GetContacts(void)
     {
-        bool ret;
         Empty empty;
         Contacts contacts;
         ClientContext context;
@@ -225,7 +223,6 @@ public:
 
     DbNames GetDbNames(void)
     {
-        bool ret;
         Empty empty;
         DbNames names;
         ClientContext context;
@@ -252,7 +249,6 @@ public:
 
     DbTables GetDbTables(string db)
     {
-        bool ret;
         DbTables tables;
         ClientContext context;
         std::mutex mu;
@@ -281,7 +277,6 @@ public:
 
     DbRows ExecDbQuery(string db, string sql)
     {
-        bool ret;
         DbRows rows;
         ClientContext context;
         std::mutex mu;
@@ -311,7 +306,6 @@ public:
 
     int AcceptNewFriend(string v3, string v4)
     {
-        bool ret;
         Response rsp;
         ClientContext context;
         std::mutex mu;
