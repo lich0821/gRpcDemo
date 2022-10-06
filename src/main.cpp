@@ -100,6 +100,7 @@ bool realGetMsgTypes(MsgTypes *types)
                                        { 0x270F, "SYSNOTICE" },
                                        { 0x2710, "红包、系统消息" },
                                        { 0x2712, "撤回消息" } };
+    cout << "MsgTypes: " << tmp.size() << endl;
 
     MsgTypes mt;
     for (auto &[k, v] : tmp) { // C++17
@@ -113,6 +114,7 @@ bool realGetMsgTypes(MsgTypes *types)
 
 bool realGetContacts(Contacts *contacts)
 {
+    cout << "Contacts: " << 10 << endl;
     Contacts cnts;
     for (int i = 0; i < 10; i++) {
         string i_string = to_string(i);
@@ -132,6 +134,7 @@ bool realGetContacts(Contacts *contacts)
 
 bool realGetDbNames(DbNames *names)
 {
+    cout << "Dbs: " << 10 << endl;
     DbNames dbs;
     for (int i = 0; i < 10; i++) {
         string i_string = to_string(i);
@@ -139,6 +142,21 @@ bool realGetDbNames(DbNames *names)
         name->assign("db_" + i_string);
     }
     *names = move(dbs);
+
+    return true;
+}
+
+bool realGetDbTables(const string db, DbTables *tables)
+{
+    cout << "Tables of " << db << ": " << 10 << endl;
+    DbTables tbls;
+    for (int i = 0; i < 10; i++) {
+        string i_string = to_string(i);
+        DbTable *tbl    = tbls.add_tables();
+        tbl->set_name("table_" + i_string);
+        tbl->set_sql("sql_" + i_string);
+    }
+    *tables = move(tbls);
 
     return true;
 }

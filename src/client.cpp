@@ -21,10 +21,13 @@ using grpc::Status;
 using wcf::Contact;
 using wcf::Contacts;
 using wcf::DbNames;
+using wcf::DbTable;
+using wcf::DbTables;
 using wcf::Empty;
 using wcf::ImageMsg;
 using wcf::MsgTypes;
 using wcf::Response;
+using wcf::String;
 using wcf::TextMsg;
 using wcf::Wcf;
 using wcf::WxMsg;
@@ -182,7 +185,7 @@ public:
         cv.wait(lock, [&done] { return done; });
 
         if (!status.ok()) {
-            cout << "SendImageMsg rpc failed." << endl;
+            cout << "GetMsgTypes rpc failed." << endl;
         }
 
         return mt;
@@ -209,7 +212,7 @@ public:
         cv.wait(lock, [&done] { return done; });
 
         if (!status.ok()) {
-            cout << "SendImageMsg rpc failed." << endl;
+            cout << "GetContacts rpc failed." << endl;
         }
 
         return contacts;
@@ -236,10 +239,39 @@ public:
         cv.wait(lock, [&done] { return done; });
 
         if (!status.ok()) {
-            cout << "SendImageMsg rpc failed." << endl;
+            cout << "GetDbNames rpc failed." << endl;
         }
 
         return names;
+    }
+
+    DbTables GetDbTables(string db)
+    {
+        bool ret;
+        DbTables tables;
+        ClientContext context;
+        std::mutex mu;
+        std::condition_variable cv;
+        bool done = false;
+        Status status;
+
+        String s_db;
+        s_db.set_str(db);
+
+        stub_->async()->GetDbTables(&context, &s_db, &tables, [&mu, &cv, &done, &status](Status s) {
+            status = std::move(s);
+            std::lock_guard<std::mutex> lock(mu);
+            done = true;
+            cv.notify_one();
+        });
+        std::unique_lock<std::mutex> lock(mu);
+        cv.wait(lock, [&done] { return done; });
+
+        if (!status.ok()) {
+            cout << "GetDbTables rpc failed." << endl;
+        }
+
+        return tables;
     }
 
 private:
@@ -284,6 +316,13 @@ int main(int argc, char **argv)
     vector<string> dbs(db.names().begin(), db.names().end());
     for (auto &name : dbs) {
         cout << name << endl;
+    }
+
+    DbTables tbls = wcf.GetDbTables("db");
+    cout << "GetDbTables: " << tbls.tables().size() << endl;
+    vector<DbTable> vtbls(tbls.tables().begin(), tbls.tables().end());
+    for (auto &tbl : vtbls) {
+        cout << tbl.name() << "\n" << tbl.sql() << endl;
     }
 
     function<void(WxMsg &)> cb = OnMsg;

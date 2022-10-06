@@ -31,10 +31,13 @@ using grpc::Status;
 using wcf::Contact;
 using wcf::Contacts;
 using wcf::DbNames;
+using wcf::DbTable;
+using wcf::DbTables;
 using wcf::Empty;
 using wcf::ImageMsg;
 using wcf::MsgTypes;
 using wcf::Response;
+using wcf::String;
 using wcf::TextMsg;
 using wcf::Wcf;
 using wcf::WxMsg;
@@ -44,6 +47,7 @@ extern int realSendImageMsg(string path, string receiver);
 extern bool realGetMsgTypes(MsgTypes *types);
 extern bool realGetContacts(Contacts *contacts);
 extern bool realGetDbNames(DbNames *names);
+extern bool realGetDbTables(const string db, DbTables *tables);
 
 class DemoImpl final : public Wcf::CallbackService
 {
@@ -141,6 +145,19 @@ public:
     grpc::ServerUnaryReactor *GetDbNames(CallbackServerContext *context, const Empty *empty, DbNames *rsp) override
     {
         bool ret      = realGetDbNames(rsp);
+        auto *reactor = context->DefaultReactor();
+        if (ret) {
+            reactor->Finish(Status::OK);
+        } else {
+            reactor->Finish(Status::CANCELLED);
+        }
+
+        return reactor;
+    }
+
+    grpc::ServerUnaryReactor *GetDbTables(CallbackServerContext *context, const String *db, DbTables *rsp) override
+    {
+        bool ret      = realGetDbTables(db->str(), rsp);
         auto *reactor = context->DefaultReactor();
         if (ret) {
             reactor->Finish(Status::OK);

@@ -9,6 +9,7 @@ service Wcf {
   rpc GetMsgTypes(Empty) returns (MsgTypes) {}
   rpc GetContacts(Empty) returns (Contacts) {}
   rpc GetDbNames(Empty) returns (DbNames) {}
+  rpc GetDbTables(String) returns (DbTables) {}
 }
 
 message Empty {}
@@ -53,3 +54,11 @@ message Contact {
 message Contacts { repeated Contact contacts = 1; }
 
 message DbNames { repeated string names = 1; }
+
+message String { string str = 1; }
+
+message DbTable {
+  string name = 1; // 表名
+  string sql = 2;  // 建表 SQL
+}
+message DbTables { repeated DbTable tables = 1; }
