@@ -19,6 +19,7 @@ using grpc::ClientContext;
 using grpc::Status;
 
 using wcf::Empty;
+using wcf::ImageMsg;
 using wcf::Response;
 using wcf::TextMsg;
 using wcf::Wcf;
@@ -95,7 +96,7 @@ public:
         }
     }
 
-    int SendTextMsg(TextMsg msg)
+    int SendTextMsg(string msg, string receiver, string atusers)
     {
         Response rsp;
         ClientContext context;
@@ -104,7 +105,12 @@ public:
         bool done = false;
         Status status;
 
-        stub_->async()->SendTextMsg(&context, &msg, &rsp, [&mu, &cv, &done, &status](Status s) {
+        TextMsg t_msg;
+        t_msg.set_msg(msg);
+        t_msg.set_receiver(receiver);
+        t_msg.set_aters(atusers);
+
+        stub_->async()->SendTextMsg(&context, &t_msg, &rsp, [&mu, &cv, &done, &status](Status s) {
             status = std::move(s);
             std::lock_guard<std::mutex> lock(mu);
             done = true;
@@ -115,6 +121,36 @@ public:
 
         if (!status.ok()) {
             cout << "SendTextMsg rpc failed." << endl;
+            rsp.set_status(-999); // TODO: Unify error code
+        }
+
+        return rsp.status();
+    }
+
+    int SendImageMsg(string path, string receiver)
+    {
+        Response rsp;
+        ClientContext context;
+        std::mutex mu;
+        std::condition_variable cv;
+        bool done = false;
+        Status status;
+
+        ImageMsg i_msg;
+        i_msg.set_path(path);
+        i_msg.set_receiver(receiver);
+
+        stub_->async()->SendImageMsg(&context, &i_msg, &rsp, [&mu, &cv, &done, &status](Status s) {
+            status = std::move(s);
+            std::lock_guard<std::mutex> lock(mu);
+            done = true;
+            cv.notify_one();
+        });
+        std::unique_lock<std::mutex> lock(mu);
+        cv.wait(lock, [&done] { return done; });
+
+        if (!status.ok()) {
+            cout << "SendImageMsg rpc failed." << endl;
             rsp.set_status(-999); // TODO: Unify error code
         }
 
@@ -137,13 +173,11 @@ int main(int argc, char **argv)
     int ret;
     DemoClient wcf(grpc::CreateChannel("localhost:50051", grpc::InsecureChannelCredentials()));
 
-    TextMsg t_msg;
-    t_msg.set_msg("这是要发送的消息！");
-    t_msg.set_receiver("wxid_fdjslajfdlajfldaj");
-    t_msg.set_aters("");
-
-    ret = wcf.SendTextMsg(t_msg);
+    ret = wcf.SendTextMsg("这是要发送的消息！", "wxid_fdjslajfdlajfldaj", "");
     cout << "SendTextMsg: " << ret << endl;
+
+    ret = wcf.SendImageMsg("这是图片的路径！", "wxid_fdjslajfdlajfldaj");
+    cout << "SendImageMsg: " << ret << endl;
 
     function<void(WxMsg &)> cb = OnMsg;
     wcf.SetMsgHandleCb(cb);

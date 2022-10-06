@@ -5,6 +5,7 @@ package wcf;
 service Wcf {
   rpc GetMessage(Empty) returns (stream WxMsg) {}
   rpc SendTextMsg(TextMsg) returns (Response) {}
+  rpc SendImageMsg(ImageMsg) returns (Response) {}
 }
 
 message Empty {}
@@ -28,4 +29,9 @@ message TextMsg {
   string msg = 1;      // 要发送的消息内容
   string receiver = 2; // 消息接收人，当为群时可@
   string aters = 3;    // 要@的人列表，逗号分隔
+}
+
+message ImageMsg {
+  string path = 1;     // 要发送的图片的路径
+  string receiver = 2; // 消息接收人
 }

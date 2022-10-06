@@ -29,12 +29,14 @@ using grpc::ServerBuilder;
 using grpc::Status;
 
 using wcf::Empty;
+using wcf::ImageMsg;
 using wcf::Response;
 using wcf::TextMsg;
 using wcf::Wcf;
 using wcf::WxMsg;
 
 extern int realSendTextMsg(string msg, string receiver, string aters);
+extern int realSendImageMsg(string path, string receiver);
 
 class DemoImpl final : public Wcf::CallbackService
 {
@@ -88,6 +90,16 @@ public:
     {
         int ret = realSendTextMsg(msg->msg(), msg->receiver(), msg->aters());
         rsp->set_status(ret);
+        auto *reactor = context->DefaultReactor();
+        reactor->Finish(Status::OK);
+        return reactor;
+    }
+
+    grpc::ServerUnaryReactor *SendImageMsg(CallbackServerContext *context, const ImageMsg *msg, Response *rsp) override
+    {
+        int ret = realSendImageMsg(msg->path(), msg->receiver());
+        rsp->set_status(ret);
+        rsp->set_status(0);
         auto *reactor = context->DefaultReactor();
         reactor->Finish(Status::OK);
         return reactor;

@@ -74,6 +74,12 @@ int realSendTextMsg(string msg, string receiver, string aters)
     return 0;
 }
 
+int realSendImageMsg(string path, string receiver)
+{
+    cout << "To[" << receiver << "]: " << path << endl;
+    return 0;
+}
+
 void RunServer()
 {
     string server_address("localhost:50051");
