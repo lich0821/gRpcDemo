@@ -7,6 +7,7 @@ service Wcf {
   rpc SendTextMsg(TextMsg) returns (Response) {}
   rpc SendImageMsg(ImageMsg) returns (Response) {}
   rpc GetMsgTypes(Empty) returns (MsgTypes) {}
+  rpc GetContacts(Empty) returns (Contacts) {}
 }
 
 message Empty {}
@@ -38,3 +39,14 @@ message ImageMsg {
 }
 
 message MsgTypes { map<int32, string> types = 1; }
+
+message Contact {
+  string wxid = 1;     // 微信 id
+  string code = 2;     // 微信号
+  string name = 3;     // 微信昵称
+  string country = 4;  // 国家
+  string province = 5; // 省/州
+  string city = 6;     // 城市
+  string gender = 7;   // 性别
+}
+message Contacts { repeated Contact contacts = 1; }

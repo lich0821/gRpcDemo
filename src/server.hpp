@@ -28,6 +28,8 @@ using grpc::Server;
 using grpc::ServerBuilder;
 using grpc::Status;
 
+using wcf::Contact;
+using wcf::Contacts;
 using wcf::Empty;
 using wcf::ImageMsg;
 using wcf::MsgTypes;
@@ -39,6 +41,7 @@ using wcf::WxMsg;
 extern int realSendTextMsg(string msg, string receiver, string aters);
 extern int realSendImageMsg(string path, string receiver);
 extern bool realGetMsgTypes(MsgTypes *types);
+extern bool realGetContacts(Contacts *contacts);
 
 class DemoImpl final : public Wcf::CallbackService
 {
@@ -110,6 +113,19 @@ public:
     grpc::ServerUnaryReactor *GetMsgTypes(CallbackServerContext *context, const Empty *empty, MsgTypes *rsp) override
     {
         bool ret      = realGetMsgTypes(rsp);
+        auto *reactor = context->DefaultReactor();
+        if (ret) {
+            reactor->Finish(Status::OK);
+        } else {
+            reactor->Finish(Status::CANCELLED);
+        }
+
+        return reactor;
+    }
+
+    grpc::ServerUnaryReactor *GetContacts(CallbackServerContext *context, const Empty *empty, Contacts *rsp) override
+    {
+        bool ret      = realGetContacts(rsp);
         auto *reactor = context->DefaultReactor();
         if (ret) {
             reactor->Finish(Status::OK);

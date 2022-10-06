@@ -18,6 +18,8 @@ using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
 
+using wcf::Contact;
+using wcf::Contacts;
 using wcf::Empty;
 using wcf::ImageMsg;
 using wcf::MsgTypes;
@@ -185,6 +187,33 @@ public:
         return mt;
     }
 
+    Contacts GetContacts(void)
+    {
+        bool ret;
+        Empty empty;
+        Contacts contacts;
+        ClientContext context;
+        std::mutex mu;
+        std::condition_variable cv;
+        bool done = false;
+        Status status;
+
+        stub_->async()->GetContacts(&context, &empty, &contacts, [&mu, &cv, &done, &status](Status s) {
+            status = std::move(s);
+            std::lock_guard<std::mutex> lock(mu);
+            done = true;
+            cv.notify_one();
+        });
+        std::unique_lock<std::mutex> lock(mu);
+        cv.wait(lock, [&done] { return done; });
+
+        if (!status.ok()) {
+            cout << "SendImageMsg rpc failed." << endl;
+        }
+
+        return contacts;
+    }
+
 private:
     unique_ptr<Wcf::Stub> stub_;
 };
@@ -212,6 +241,14 @@ int main(int argc, char **argv)
     map<int32_t, string> m(mts.types().begin(), mts.types().end());
     for (auto &[k, v] : m) { // C++17
         cout << k << ": " << v << endl;
+    }
+
+    Contacts cnts = wcf.GetContacts();
+    cout << "GetContacts: " << cnts.contacts().size() << endl;
+    vector<Contact> vcnts(cnts.contacts().begin(), cnts.contacts().end());
+    for (auto &c : vcnts) {
+        cout << c.wxid() << "\t" << c.code() << "\t" << c.name() << "\t" << c.country() << "\t" << c.province() << "\t"
+             << c.city() << "\t" << c.gender() << endl;
     }
 
     function<void(WxMsg &)> cb = OnMsg;

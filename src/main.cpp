@@ -111,6 +111,25 @@ bool realGetMsgTypes(MsgTypes *types)
     return true;
 }
 
+bool realGetContacts(Contacts *contacts)
+{
+    Contacts cnts;
+    for (int i = 0; i < 10; i++) {
+        string i_string = to_string(i);
+        Contact *cnt    = cnts.add_contacts();
+        cnt->set_wxid("wxid_" + i_string);
+        cnt->set_code("code_" + i_string);
+        cnt->set_name("name_" + i_string);
+        cnt->set_country("country_" + i_string);
+        cnt->set_province("province_" + i_string);
+        cnt->set_city("city_" + i_string);
+        cnt->set_gender("gender_" + i_string);
+    }
+    *contacts = move(cnts);
+
+    return true;
+}
+
 void RunServer()
 {
     string server_address("localhost:50051");
