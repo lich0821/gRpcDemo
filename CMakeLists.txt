@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.1)
 
 project(wcf)
 
+set(CMAKE_CXX_STANDARD 17)
+
 find_package(Protobuf REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
 
