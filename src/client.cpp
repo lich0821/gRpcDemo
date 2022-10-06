@@ -10,7 +10,7 @@ RPC Client
 
 #include <grpcpp/grpcpp.h>
 
-#include "../proto/demo.grpc.pb.h"
+#include "../proto/wcf.grpc.pb.h"
 
 using namespace std;
 
@@ -18,25 +18,26 @@ using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
 
-using demo::Demo;
-using demo::Msg;
+using wcf::Wcf;
+using wcf::Empty;
+using wcf::WxMsg;
 
 class DemoClient
 {
 public:
     DemoClient(shared_ptr<Channel> channel)
-        : stub_(Demo::NewStub(channel))
+        : stub_(Wcf::NewStub(channel))
     {
     }
 
-    void SetMsgHandleCb(function<void(Msg &)> msg_handle_cb) { GetMessage(msg_handle_cb); }
+    void SetMsgHandleCb(function<void(WxMsg &)> msg_handle_cb) { GetMessage(msg_handle_cb); }
 
-    void GetMessage(function<void(Msg &)> msg_handle_cb)
+    void GetMessage(function<void(WxMsg &)> msg_handle_cb)
     {
-        class Reader : public grpc::ClientReadReactor<Msg>
+        class Reader : public grpc::ClientReadReactor<WxMsg>
         {
         public:
-            Reader(Demo::Stub *stub, function<void(Msg &)> msg_handle_cb)
+            Reader(Wcf::Stub *stub, function<void(WxMsg &)> msg_handle_cb)
                 : msg_handle_cb_(msg_handle_cb)
             {
                 stub->async()->GetMessage(&context_, &empty_, this);
@@ -72,8 +73,8 @@ public:
             }
 
         private:
-            demo::Empty empty_;
-            demo::Msg msg_;
+            wcf::Empty empty_;
+            wcf::WxMsg msg_;
             ClientContext context_;
 
             mutex mu_;
@@ -81,35 +82,34 @@ public:
             bool done_ = false;
             condition_variable cv_;
 
-            function<void(Msg &)> msg_handle_cb_;
+            function<void(WxMsg &)> msg_handle_cb_;
         };
 
         Reader reader(stub_.get(), msg_handle_cb);
         Status status = reader.Await();
 
-        if (status.ok()) {
-            cout << "GetMessage rpc succeeded." << endl;
-        } else {
+        if (!status.ok()) {
             cout << "GetMessage rpc failed." << endl;
         }
     }
 
 private:
-    unique_ptr<Demo::Stub> stub_;
+    unique_ptr<Wcf::Stub> stub_;
 };
 
-int OnMsg(Msg msg)
+int OnMsg(WxMsg msg)
 {
-    cout << "Got Message: " << msg.id() << ", " << msg.type() << endl;
+    cout << "Got Message: " << msg.is_self() << ", " << msg.is_group() << ", " << msg.type() << ", " << msg.id() << ", "
+         << msg.xml() << ", " << msg.sender() << ", " << msg.roomid() << ", " << msg.content() << endl;
     return 0;
 }
 
 int main(int argc, char **argv)
 {
-    DemoClient demo(grpc::CreateChannel("localhost:50051", grpc::InsecureChannelCredentials()));
+    DemoClient wcf(grpc::CreateChannel("localhost:50051", grpc::InsecureChannelCredentials()));
 
-    function<void(Msg &)> cb = OnMsg;
-    demo.SetMsgHandleCb(cb);
+    function<void(WxMsg &)> cb = OnMsg;
+    wcf.SetMsgHandleCb(cb);
 
     return 0;
 }

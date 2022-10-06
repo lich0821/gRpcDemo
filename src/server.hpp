@@ -19,7 +19,7 @@ Server
 #include <grpcpp/server_builder.h>
 #include <grpcpp/server_context.h>
 
-#include "../proto/demo.grpc.pb.h"
+#include "../proto/wcf.grpc.pb.h"
 
 using namespace std;
 
@@ -28,26 +28,26 @@ using grpc::Server;
 using grpc::ServerBuilder;
 using grpc::Status;
 
-using demo::Demo;
-using demo::Empty;
-using demo::Msg;
+using wcf::Wcf;
+using wcf::Empty;
+using wcf::WxMsg;
 
-class DemoImpl final : public Demo::CallbackService
+class DemoImpl final : public Wcf::CallbackService
 {
 public:
-    explicit DemoImpl(queue<Msg> &q, mutex &m, condition_variable &cv)
+    explicit DemoImpl(queue<WxMsg> &q, mutex &m, condition_variable &cv)
     {
         msg_q  = &q;
         msg_m  = &m;
         msg_cv = &cv;
     }
 
-    grpc::ServerWriteReactor<Msg> *GetMessage(CallbackServerContext *context, const Empty *empty) override
+    grpc::ServerWriteReactor<WxMsg> *GetMessage(CallbackServerContext *context, const Empty *empty) override
     {
-        class Getter : public grpc::ServerWriteReactor<Msg>
+        class Getter : public grpc::ServerWriteReactor<WxMsg>
         {
         public:
-            Getter(queue<Msg> *q, mutex *m, condition_variable *cv)
+            Getter(queue<WxMsg> *q, mutex *m, condition_variable *cv)
                 : msg_q_(q)
                 , msg_m_(m)
                 , msg_cv_(cv)
@@ -71,8 +71,8 @@ public:
 
                 // Finish(Status::OK);  // 结束本次通信
             }
-            Msg tmp_; // 如果将它放到 NextWrite 内部，StartWrite 调用时可能已经出了作用域
-            queue<Msg> *msg_q_;
+            WxMsg tmp_; // 如果将它放到 NextWrite 内部，StartWrite 调用时可能已经出了作用域
+            queue<WxMsg> *msg_q_;
             mutex *msg_m_;
             condition_variable *msg_cv_;
         };
@@ -81,7 +81,7 @@ public:
     }
 
 private:
-    queue<Msg> *msg_q;
+    queue<WxMsg> *msg_q;
     mutex *msg_m;
     condition_variable *msg_cv;
 };

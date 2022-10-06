@@ -15,10 +15,10 @@ Application
 #endif
 
 mutex gMutex;
-queue<Msg> gMsgQueue;
+queue<WxMsg> gMsgQueue;
 condition_variable gCv;
 
-void ProduceMsg(queue<Msg> *msg_queue)
+void ProduceMsg(queue<WxMsg> *msg_queue)
 {
     random_device rd;  // 随机数生成器
     mt19937 gen(rd()); // Mersenne Twister 算法
@@ -30,9 +30,17 @@ void ProduceMsg(queue<Msg> *msg_queue)
         int tmp = random_i(gen); // 生成 (1000, 5000) 随机数
 
         // 生成消息
-        Msg msg;
+        WxMsg msg;
+        msg.set_is_self(false);
+        msg.set_is_group(tmp % 2 == 0);
+        msg.set_is_self(false);
+        msg.set_is_group(tmp % 2 == 0);
+        msg.set_type(tmp / 100);
         msg.set_id("Id_" + to_string(i++));
-        msg.set_type(to_string(tmp));
+        msg.set_xml("<xml></xml>");
+        msg.set_sender("wxid_" + to_string(tmp * tmp));
+        msg.set_roomid(to_string(i * tmp) + "@chatroom");
+        msg.set_content("Content" + to_string(tmp + tmp));
 
         // 推送到队列
         unique_lock<std::mutex> locker(gMutex);
@@ -47,7 +55,7 @@ void ProduceMsg(queue<Msg> *msg_queue)
     }
 }
 
-void ConsumeMsg(queue<Msg> *msg_queue)
+void ConsumeMsg(queue<WxMsg> *msg_queue)
 {
     while (true) {
         unique_lock<std::mutex> lock(gMutex);
