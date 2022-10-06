@@ -4,6 +4,7 @@ package wcf;
 
 service Wcf {
   rpc GetMessage(Empty) returns (stream WxMsg) {}
+  rpc SendTextMsg(TextMsg) returns (Response) {}
 }
 
 message Empty {}
@@ -17,4 +18,14 @@ message WxMsg {
   string sender = 6;  // 消息发送者
   string roomid = 7;  // 群 id（如果是群消息的话）
   string content = 8; // 消息内容
+}
+
+message Response {
+  int32 status = 1; // 状态码
+}
+
+message TextMsg {
+  string msg = 1;      // 要发送的消息内容
+  string receiver = 2; // 消息接收人，当为群时可@
+  string aters = 3;    // 要@的人列表，逗号分隔
 }

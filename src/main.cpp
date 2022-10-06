@@ -68,6 +68,12 @@ void ConsumeMsg(queue<WxMsg> *msg_queue)
     }
 }
 
+int realSendTextMsg(string msg, string receiver, string aters)
+{
+    cout << "To[" << receiver << "]: " << msg << endl;
+    return 0;
+}
+
 void RunServer()
 {
     string server_address("localhost:50051");

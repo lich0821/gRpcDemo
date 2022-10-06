@@ -18,8 +18,10 @@ using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
 
-using wcf::Wcf;
 using wcf::Empty;
+using wcf::Response;
+using wcf::TextMsg;
+using wcf::Wcf;
 using wcf::WxMsg;
 
 class DemoClient
@@ -93,6 +95,32 @@ public:
         }
     }
 
+    int SendTextMsg(TextMsg msg)
+    {
+        Response rsp;
+        ClientContext context;
+        std::mutex mu;
+        std::condition_variable cv;
+        bool done = false;
+        Status status;
+
+        stub_->async()->SendTextMsg(&context, &msg, &rsp, [&mu, &cv, &done, &status](Status s) {
+            status = std::move(s);
+            std::lock_guard<std::mutex> lock(mu);
+            done = true;
+            cv.notify_one();
+        });
+        std::unique_lock<std::mutex> lock(mu);
+        cv.wait(lock, [&done] { return done; });
+
+        if (!status.ok()) {
+            cout << "SendTextMsg rpc failed." << endl;
+            rsp.set_status(-999); // TODO: Unify error code
+        }
+
+        return rsp.status();
+    }
+
 private:
     unique_ptr<Wcf::Stub> stub_;
 };
@@ -106,7 +134,16 @@ int OnMsg(WxMsg msg)
 
 int main(int argc, char **argv)
 {
+    int ret;
     DemoClient wcf(grpc::CreateChannel("localhost:50051", grpc::InsecureChannelCredentials()));
+
+    TextMsg t_msg;
+    t_msg.set_msg("这是要发送的消息！");
+    t_msg.set_receiver("wxid_fdjslajfdlajfldaj");
+    t_msg.set_aters("");
+
+    ret = wcf.SendTextMsg(t_msg);
+    cout << "SendTextMsg: " << ret << endl;
 
     function<void(WxMsg &)> cb = OnMsg;
     wcf.SetMsgHandleCb(cb);
