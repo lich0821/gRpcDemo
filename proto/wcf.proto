@@ -10,6 +10,7 @@ service Wcf {
   rpc GetContacts(Empty) returns (Contacts) {}
   rpc GetDbNames(Empty) returns (DbNames) {}
   rpc GetDbTables(String) returns (DbTables) {}
+  rpc ExecDbQuery(DbQuery) returns (DbRows) {}
 }
 
 message Empty {}
@@ -62,3 +63,16 @@ message DbTable {
   string sql = 2;  // 建表 SQL
 }
 message DbTables { repeated DbTable tables = 1; }
+
+message DbQuery {
+  string db = 1;  // 目标数据库
+  string sql = 2; // 查询 SQL
+}
+
+message DbField {
+  int32 type = 1;    // 字段类型
+  string column = 2; // 字段名称
+  bytes content = 3; // 字段内容
+}
+message DbRow { repeated DbField fields = 1; }
+message DbRows { repeated DbRow rows = 1; }

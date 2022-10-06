@@ -30,7 +30,11 @@ using grpc::Status;
 
 using wcf::Contact;
 using wcf::Contacts;
+using wcf::DbField;
 using wcf::DbNames;
+using wcf::DbQuery;
+using wcf::DbRow;
+using wcf::DbRows;
 using wcf::DbTable;
 using wcf::DbTables;
 using wcf::Empty;
@@ -48,6 +52,7 @@ extern bool realGetMsgTypes(MsgTypes *types);
 extern bool realGetContacts(Contacts *contacts);
 extern bool realGetDbNames(DbNames *names);
 extern bool realGetDbTables(const string db, DbTables *tables);
+extern bool realExecDbQuery(const string db, const string sql, DbRows *rows);
 
 class DemoImpl final : public Wcf::CallbackService
 {
@@ -158,6 +163,19 @@ public:
     grpc::ServerUnaryReactor *GetDbTables(CallbackServerContext *context, const String *db, DbTables *rsp) override
     {
         bool ret      = realGetDbTables(db->str(), rsp);
+        auto *reactor = context->DefaultReactor();
+        if (ret) {
+            reactor->Finish(Status::OK);
+        } else {
+            reactor->Finish(Status::CANCELLED);
+        }
+
+        return reactor;
+    }
+
+    grpc::ServerUnaryReactor *ExecDbQuery(CallbackServerContext *context, const DbQuery *query, DbRows *rsp) override
+    {
+        bool ret      = realExecDbQuery(query->db(), query->sql(), rsp);
         auto *reactor = context->DefaultReactor();
         if (ret) {
             reactor->Finish(Status::OK);

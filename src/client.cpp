@@ -20,7 +20,11 @@ using grpc::Status;
 
 using wcf::Contact;
 using wcf::Contacts;
+using wcf::DbField;
 using wcf::DbNames;
+using wcf::DbQuery;
+using wcf::DbRow;
+using wcf::DbRows;
 using wcf::DbTable;
 using wcf::DbTables;
 using wcf::Empty;
@@ -274,6 +278,36 @@ public:
         return tables;
     }
 
+    DbRows ExecDbQuery(string db, string sql)
+    {
+        bool ret;
+        DbRows rows;
+        ClientContext context;
+        std::mutex mu;
+        std::condition_variable cv;
+        bool done = false;
+        Status status;
+
+        DbQuery query;
+        query.set_db(db);
+        query.set_sql(sql);
+
+        stub_->async()->ExecDbQuery(&context, &query, &rows, [&mu, &cv, &done, &status](Status s) {
+            status = std::move(s);
+            std::lock_guard<std::mutex> lock(mu);
+            done = true;
+            cv.notify_one();
+        });
+        std::unique_lock<std::mutex> lock(mu);
+        cv.wait(lock, [&done] { return done; });
+
+        if (!status.ok()) {
+            cout << "ExecDbQuery rpc failed." << endl;
+        }
+
+        return rows;
+    }
+
 private:
     unique_ptr<Wcf::Stub> stub_;
 };
@@ -323,6 +357,15 @@ int main(int argc, char **argv)
     vector<DbTable> vtbls(tbls.tables().begin(), tbls.tables().end());
     for (auto &tbl : vtbls) {
         cout << tbl.name() << "\n" << tbl.sql() << endl;
+    }
+
+    DbRows r = wcf.ExecDbQuery("MicroMsg.db", "SELECT * FROM Contact LIMIT 1;");
+    cout << "ExecDbQuery: " << r.rows().size() << endl;
+    vector<DbRow> vrows(r.rows().begin(), r.rows().end());
+    for (auto &row : vrows) {
+        vector<DbField> vfields(row.fields().begin(), row.fields().end());
+        for (auto &field : vfields)
+            cout << field.column() << "[" << field.type() << "]: " << field.content() << endl;
     }
 
     function<void(WxMsg &)> cb = OnMsg;

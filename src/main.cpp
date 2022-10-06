@@ -161,6 +161,24 @@ bool realGetDbTables(const string db, DbTables *tables)
     return true;
 }
 
+bool realExecDbQuery(const string db, const string sql, DbRows *rows)
+{
+    cout << "Query[" << db << "]: " << sql << endl;
+    for (int i = 0; i < 10; i++) {
+        string i_string = to_string(i);
+        DbRow *row      = rows->add_rows();
+        for (int j = 0; j < 5; j++) {
+            string j_string = to_string(j);
+            DbField *field  = row->add_fields();
+            field->set_type(j);
+            field->set_column("col_" + j_string);
+            field->set_content("content_" + i_string + j_string);
+        }
+    }
+
+    return true;
+}
+
 void RunServer()
 {
     string server_address("localhost:50051");
