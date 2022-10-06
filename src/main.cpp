@@ -179,6 +179,12 @@ bool realExecDbQuery(const string db, const string sql, DbRows *rows)
     return true;
 }
 
+bool realAcceptNewFriend(const string v3, const string v4)
+{
+    cout << "Add new friend with " << v3 << "\t" << v4 << endl;
+    return true;
+}
+
 void RunServer()
 {
     string server_address("localhost:50051");

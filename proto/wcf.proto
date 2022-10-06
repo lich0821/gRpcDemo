@@ -11,6 +11,7 @@ service Wcf {
   rpc GetDbNames(Empty) returns (DbNames) {}
   rpc GetDbTables(String) returns (DbTables) {}
   rpc ExecDbQuery(DbQuery) returns (DbRows) {}
+  rpc AcceptNewFriend(Verification) returns (Response) {}
 }
 
 message Empty {}
@@ -76,3 +77,8 @@ message DbField {
 }
 message DbRow { repeated DbField fields = 1; }
 message DbRows { repeated DbRow rows = 1; }
+
+message Verification {
+  string v3 = 1;
+  string v4 = 2;
+}

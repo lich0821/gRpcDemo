@@ -43,6 +43,7 @@ using wcf::MsgTypes;
 using wcf::Response;
 using wcf::String;
 using wcf::TextMsg;
+using wcf::Verification;
 using wcf::Wcf;
 using wcf::WxMsg;
 
@@ -53,6 +54,7 @@ extern bool realGetContacts(Contacts *contacts);
 extern bool realGetDbNames(DbNames *names);
 extern bool realGetDbTables(const string db, DbTables *tables);
 extern bool realExecDbQuery(const string db, const string sql, DbRows *rows);
+extern bool realAcceptNewFriend(const string v3, const string v4);
 
 class DemoImpl final : public Wcf::CallbackService
 {
@@ -180,6 +182,22 @@ public:
         if (ret) {
             reactor->Finish(Status::OK);
         } else {
+            reactor->Finish(Status::CANCELLED);
+        }
+
+        return reactor;
+    }
+
+    grpc::ServerUnaryReactor *AcceptNewFriend(CallbackServerContext *context, const Verification *v,
+                                              Response *rsp) override
+    {
+        bool ret      = realAcceptNewFriend(v->v3(), v->v4());
+        auto *reactor = context->DefaultReactor();
+        if (ret) {
+            rsp->set_status(0);
+            reactor->Finish(Status::OK);
+        } else {
+            rsp->set_status(-1); // TODO: Unify error code
             reactor->Finish(Status::CANCELLED);
         }
 

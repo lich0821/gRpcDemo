@@ -33,6 +33,7 @@ using wcf::MsgTypes;
 using wcf::Response;
 using wcf::String;
 using wcf::TextMsg;
+using wcf::Verification;
 using wcf::Wcf;
 using wcf::WxMsg;
 
@@ -308,6 +309,37 @@ public:
         return rows;
     }
 
+    int AcceptNewFriend(string v3, string v4)
+    {
+        bool ret;
+        Response rsp;
+        ClientContext context;
+        std::mutex mu;
+        std::condition_variable cv;
+        bool done = false;
+        Status status;
+
+        Verification v;
+        v.set_v3(v3);
+        v.set_v4(v4);
+
+        stub_->async()->AcceptNewFriend(&context, &v, &rsp, [&mu, &cv, &done, &status](Status s) {
+            status = std::move(s);
+            std::lock_guard<std::mutex> lock(mu);
+            done = true;
+            cv.notify_one();
+        });
+        std::unique_lock<std::mutex> lock(mu);
+        cv.wait(lock, [&done] { return done; });
+
+        if (!status.ok()) {
+            cout << "ExecDbQuery rpc failed." << endl;
+            rsp.set_status(-999); // TODO: Unify error code
+        }
+
+        return rsp.status();
+    }
+
 private:
     unique_ptr<Wcf::Stub> stub_;
 };
@@ -367,6 +399,9 @@ int main(int argc, char **argv)
         for (auto &field : vfields)
             cout << field.column() << "[" << field.type() << "]: " << field.content() << endl;
     }
+
+    ret = wcf.AcceptNewFriend("v3", "v4");
+    cout << "AcceptNewFriend: " << ret << endl;
 
     function<void(WxMsg &)> cb = OnMsg;
     wcf.SetMsgHandleCb(cb);
