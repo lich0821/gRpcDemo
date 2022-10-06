@@ -130,6 +130,19 @@ bool realGetContacts(Contacts *contacts)
     return true;
 }
 
+bool realGetDbNames(DbNames *names)
+{
+    DbNames dbs;
+    for (int i = 0; i < 10; i++) {
+        string i_string = to_string(i);
+        auto *name      = dbs.add_names();
+        name->assign("db_" + i_string);
+    }
+    *names = move(dbs);
+
+    return true;
+}
+
 void RunServer()
 {
     string server_address("localhost:50051");

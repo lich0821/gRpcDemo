@@ -8,6 +8,7 @@ service Wcf {
   rpc SendImageMsg(ImageMsg) returns (Response) {}
   rpc GetMsgTypes(Empty) returns (MsgTypes) {}
   rpc GetContacts(Empty) returns (Contacts) {}
+  rpc GetDbNames(Empty) returns (DbNames) {}
 }
 
 message Empty {}
@@ -50,3 +51,5 @@ message Contact {
   string gender = 7;   // 性别
 }
 message Contacts { repeated Contact contacts = 1; }
+
+message DbNames { repeated string names = 1; }

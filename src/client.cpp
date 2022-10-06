@@ -20,6 +20,7 @@ using grpc::Status;
 
 using wcf::Contact;
 using wcf::Contacts;
+using wcf::DbNames;
 using wcf::Empty;
 using wcf::ImageMsg;
 using wcf::MsgTypes;
@@ -214,6 +215,33 @@ public:
         return contacts;
     }
 
+    DbNames GetDbNames(void)
+    {
+        bool ret;
+        Empty empty;
+        DbNames names;
+        ClientContext context;
+        std::mutex mu;
+        std::condition_variable cv;
+        bool done = false;
+        Status status;
+
+        stub_->async()->GetDbNames(&context, &empty, &names, [&mu, &cv, &done, &status](Status s) {
+            status = std::move(s);
+            std::lock_guard<std::mutex> lock(mu);
+            done = true;
+            cv.notify_one();
+        });
+        std::unique_lock<std::mutex> lock(mu);
+        cv.wait(lock, [&done] { return done; });
+
+        if (!status.ok()) {
+            cout << "SendImageMsg rpc failed." << endl;
+        }
+
+        return names;
+    }
+
 private:
     unique_ptr<Wcf::Stub> stub_;
 };
@@ -249,6 +277,13 @@ int main(int argc, char **argv)
     for (auto &c : vcnts) {
         cout << c.wxid() << "\t" << c.code() << "\t" << c.name() << "\t" << c.country() << "\t" << c.province() << "\t"
              << c.city() << "\t" << c.gender() << endl;
+    }
+
+    DbNames db = wcf.GetDbNames();
+    cout << "GetDbNames: " << db.names().size() << endl;
+    vector<string> dbs(db.names().begin(), db.names().end());
+    for (auto &name : dbs) {
+        cout << name << endl;
     }
 
     function<void(WxMsg &)> cb = OnMsg;
