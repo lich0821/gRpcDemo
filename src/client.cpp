@@ -20,6 +20,7 @@ using grpc::Status;
 
 using wcf::Empty;
 using wcf::ImageMsg;
+using wcf::MsgTypes;
 using wcf::Response;
 using wcf::TextMsg;
 using wcf::Wcf;
@@ -157,6 +158,33 @@ public:
         return rsp.status();
     }
 
+    MsgTypes GetMsgTypes(void)
+    {
+        bool ret;
+        Empty empty;
+        MsgTypes mt;
+        ClientContext context;
+        std::mutex mu;
+        std::condition_variable cv;
+        bool done = false;
+        Status status;
+
+        stub_->async()->GetMsgTypes(&context, &empty, &mt, [&mu, &cv, &done, &status](Status s) {
+            status = std::move(s);
+            std::lock_guard<std::mutex> lock(mu);
+            done = true;
+            cv.notify_one();
+        });
+        std::unique_lock<std::mutex> lock(mu);
+        cv.wait(lock, [&done] { return done; });
+
+        if (!status.ok()) {
+            cout << "SendImageMsg rpc failed." << endl;
+        }
+
+        return mt;
+    }
+
 private:
     unique_ptr<Wcf::Stub> stub_;
 };
@@ -178,6 +206,13 @@ int main(int argc, char **argv)
 
     ret = wcf.SendImageMsg("这是图片的路径！", "wxid_fdjslajfdlajfldaj");
     cout << "SendImageMsg: " << ret << endl;
+
+    MsgTypes mts = wcf.GetMsgTypes();
+    cout << "GetMsgTypes: " << mts.types_size() << endl;
+    map<int32_t, string> m(mts.types().begin(), mts.types().end());
+    for (auto &[k, v] : m) { // C++17
+        cout << k << ": " << v << endl;
+    }
 
     function<void(WxMsg &)> cb = OnMsg;
     wcf.SetMsgHandleCb(cb);

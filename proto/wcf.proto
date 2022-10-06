@@ -6,6 +6,7 @@ service Wcf {
   rpc GetMessage(Empty) returns (stream WxMsg) {}
   rpc SendTextMsg(TextMsg) returns (Response) {}
   rpc SendImageMsg(ImageMsg) returns (Response) {}
+  rpc GetMsgTypes(Empty) returns (MsgTypes) {}
 }
 
 message Empty {}
@@ -35,3 +36,5 @@ message ImageMsg {
   string path = 1;     // 要发送的图片的路径
   string receiver = 2; // 消息接收人
 }
+
+message MsgTypes { map<int32, string> types = 1; }
