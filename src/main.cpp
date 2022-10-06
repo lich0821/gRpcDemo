@@ -1,4 +1,4 @@
-/*
+﻿/*
 Application
 */
 
@@ -10,6 +10,7 @@ Application
 
 #ifdef _WIN32
 #define SLEEP(x) Sleep((x))
+#pragma execution_character_set("utf-8")
 #else
 #define SLEEP(x) sleep((x) / 1000)
 #endif

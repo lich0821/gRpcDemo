@@ -1,9 +1,10 @@
-/*
+﻿/*
 RPC Client
 */
 
 #ifdef _WIN32
 #pragma warning(disable : 4251)
+#pragma execution_character_set("utf-8")
 #endif
 
 #include <memory>
