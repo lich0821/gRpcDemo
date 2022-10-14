@@ -111,6 +111,8 @@ make
 **注意**：因生产消息的线程随 `server` 启动，如果一直没有 `client` 连上来消费，会导致队列一直增长。
 
 ## 2 Windows
+Windows 下连接静态库，动态连接更简单，网上参考资料很多。
+
 ### 2.1 安装相关包
 #### 2.1.1 安装 vcpkg
 * 安装，参考[Vcpkg: 总览](https://github.com/microsoft/vcpkg/blob/master/README_zh_CN.md)。
@@ -125,8 +127,8 @@ git clone https://github.com/microsoft/vcpkg
 
 #### 2.1.2 安装 gRPC 相关组件
 ```sh
-vcpkg install grpc
-vcpkg install protobuf[zlib]
+vcpkg install grpc:x86-windows-static
+vcpkg install protobuf[zlib]:x86-windows-static
 vcpkg integrate install
 ```
 
@@ -136,7 +138,7 @@ vcpkg integrate install
 #### 2.2.1 生成编解码文件
 ```sh
 cd gRpcDemo/proto/
-protoc -I=. --cpp_out=. demo.proto
+protoc --cpp_out=. -I=../proto demo.proto
 ```
 
 执行 `tree .`，可见生成了两个 `*.pb.*` 文件：
@@ -149,7 +151,7 @@ protoc -I=. --cpp_out=. demo.proto
 
 #### 2.2.2 生成服务接口文件
 ```sh
-protoc -I=. --grpc_out=. --plugin=protoc-gen-grpc="C:\Tools\vcpkg\packages\grpc_x64-windows\tools\grpc\grpc_cpp_plugin.exe" demo.proto
+protoc --grpc_out=. --plugin=protoc-gen-grpc="C:\Tools\vcpkg\packages\grpc_x64-windows\tools\grpc\grpc_cpp_plugin.exe" -I=../proto demo.proto
 # 这里需要填写 grpc_cpp_plugin 的绝对路径，去 vcpkg 的安装目录下找。
 ```
 
@@ -166,11 +168,13 @@ protoc -I=. --grpc_out=. --plugin=protoc-gen-grpc="C:\Tools\vcpkg\packages\grpc_
 ### 2.3 编译
 新建 build 目录，打开 `Developer Command Prompt for VS 2019`，切换到 `build` 目录：
 ```sh
-# 生成 VS 工程
-cmake ../ -DCMAKE_TOOLCHAIN_FILE=C:/Tools/vcpkg/scripts/buildsystems/vcpkg.cmake
+# 生成 Makefile（32位）
+cmake -A Win32 -S .. -DVCPKG_TARGET_TRIPLET=x86-windows-static -DCMAKE_TOOLCHAIN_FILE=C:/Tools/vcpkg/scripts/buildsystems/vcpkg.cmake
+# 生成 Makefile（32位）
+# cmake -A x64 -S .. -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE=C:/Tools/vcpkg/scripts/buildsystems/vcpkg.cmake
 
 # 编译
-cmake --build .
+cmake --build . --config Release
 ```
 
 ### 2.4 运行
