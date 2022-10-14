@@ -1,17 +1,21 @@
 syntax = "proto3";
 
-package wcf;
+package demo;
+option java_package = "com.iamteer.demo";
 
-service Wcf {
-  rpc GetMessage(Empty) returns (stream WxMsg) {}
-  rpc SendTextMsg(TextMsg) returns (Response) {}
-  rpc SendImageMsg(ImageMsg) returns (Response) {}
-  rpc GetMsgTypes(Empty) returns (MsgTypes) {}
-  rpc GetContacts(Empty) returns (Contacts) {}
-  rpc GetDbNames(Empty) returns (DbNames) {}
-  rpc GetDbTables(String) returns (DbTables) {}
-  rpc ExecDbQuery(DbQuery) returns (DbRows) {}
-  rpc AcceptNewFriend(Verification) returns (Response) {}
+service Demo {
+  rpc RpcIsLogin(Empty) returns (Response) {}
+  rpc RpcGetSelfWxid(Empty) returns (String) {}
+  rpc RpcEnableRecvMsg(Empty) returns (stream WxMsg) {}
+  rpc RpcDisableRecvMsg(Empty) returns (Response) {}
+  rpc RpcSendTextMsg(TextMsg) returns (Response) {}
+  rpc RpcSendImageMsg(ImageMsg) returns (Response) {}
+  rpc RpcGetMsgTypes(Empty) returns (MsgTypes) {}
+  rpc RpcGetContacts(Empty) returns (Contacts) {}
+  rpc RpcGetDbNames(Empty) returns (DbNames) {}
+  rpc RpcGetDbTables(String) returns (DbTables) {}
+  rpc RpcExecDbQuery(DbQuery) returns (DbRows) {}
+  rpc RpcAcceptNewFriend(Verification) returns (Response) {}
 }
 
 message Empty {}

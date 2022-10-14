@@ -15,9 +15,9 @@ Application
 #define SLEEP(x) sleep((x) / 1000)
 #endif
 
-mutex gMutex;
-queue<WxMsg> gMsgQueue;
-condition_variable gCv;
+extern mutex gMutex;
+extern queue<WxMsg> gMsgQueue;
+extern condition_variable gCv;
 
 void ProduceMsg(queue<WxMsg> *msg_queue)
 {
@@ -103,12 +103,9 @@ bool realGetMsgTypes(MsgTypes *types)
                                        { 0x2712, "撤回消息" } };
     cout << "MsgTypes: " << tmp.size() << endl;
 
-    MsgTypes mt;
     for (auto &[k, v] : tmp) { // C++17
-        (*mt.mutable_types())[k] = v;
+        (*(types->mutable_types()))[k] = v;
     }
-
-    *types = move(mt);
 
     return true;
 }
@@ -188,8 +185,8 @@ bool realAcceptNewFriend(const string v3, const string v4)
 
 void RunServer()
 {
-    string server_address("localhost:50051");
-    DemoImpl service(gMsgQueue, gMutex, gCv);
+    string server_address("localhost:10086");
+    DemoImpl service;
 
     ServerBuilder builder;
     builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());

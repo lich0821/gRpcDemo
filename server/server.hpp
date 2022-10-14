@@ -19,33 +19,35 @@ Server
 #include <grpcpp/server_builder.h>
 #include <grpcpp/server_context.h>
 
-#include "../proto/wcf.grpc.pb.h"
+#include "demo.grpc.pb.h"
 
 using namespace std;
 
 using grpc::CallbackServerContext;
 using grpc::Server;
 using grpc::ServerBuilder;
+using grpc::ServerUnaryReactor;
+using grpc::ServerWriteReactor;
 using grpc::Status;
 
-using wcf::Contact;
-using wcf::Contacts;
-using wcf::DbField;
-using wcf::DbNames;
-using wcf::DbQuery;
-using wcf::DbRow;
-using wcf::DbRows;
-using wcf::DbTable;
-using wcf::DbTables;
-using wcf::Empty;
-using wcf::ImageMsg;
-using wcf::MsgTypes;
-using wcf::Response;
-using wcf::String;
-using wcf::TextMsg;
-using wcf::Verification;
-using wcf::Wcf;
-using wcf::WxMsg;
+using demo::Contact;
+using demo::Contacts;
+using demo::DbField;
+using demo::DbNames;
+using demo::DbQuery;
+using demo::DbRow;
+using demo::DbRows;
+using demo::DbTable;
+using demo::DbTables;
+using demo::Demo;
+using demo::Empty;
+using demo::ImageMsg;
+using demo::MsgTypes;
+using demo::Response;
+using demo::String;
+using demo::TextMsg;
+using demo::Verification;
+using demo::WxMsg;
 
 extern int realSendTextMsg(string msg, string receiver, string aters);
 extern int realSendImageMsg(string path, string receiver);
@@ -56,25 +58,22 @@ extern bool realGetDbTables(const string db, DbTables *tables);
 extern bool realExecDbQuery(const string db, const string sql, DbRows *rows);
 extern bool realAcceptNewFriend(const string v3, const string v4);
 
-class DemoImpl final : public Wcf::CallbackService
+mutex gMutex;
+queue<WxMsg> gMsgQueue;
+condition_variable gCv;
+bool gIsListening;
+
+class DemoImpl final : public Demo::CallbackService
 {
 public:
-    explicit DemoImpl(queue<WxMsg> &q, mutex &m, condition_variable &cv)
-    {
-        msg_q  = &q;
-        msg_m  = &m;
-        msg_cv = &cv;
-    }
+    explicit DemoImpl() { }
 
-    grpc::ServerWriteReactor<WxMsg> *GetMessage(CallbackServerContext *context, const Empty *empty) override
+    ServerWriteReactor<WxMsg> *RpcEnableRecvMsg(CallbackServerContext *context, const Empty *empty) override
     {
-        class Getter : public grpc::ServerWriteReactor<WxMsg>
+        class Getter : public ServerWriteReactor<WxMsg>
         {
         public:
-            Getter(queue<WxMsg> *q, mutex *m, condition_variable *cv)
-                : msg_q_(q)
-                , msg_m_(m)
-                , msg_cv_(cv)
+            Getter()
             {
                 cout << "New Call" << endl;
                 NextWrite();
@@ -85,10 +84,16 @@ public:
         private:
             void NextWrite()
             {
-                unique_lock<std::mutex> lock(*msg_m_);
-                msg_cv_->wait(lock, [&] { return !msg_q_->empty(); });
-                tmp_ = msg_q_->front();
-                msg_q_->pop();
+                // unique_lock<std::mutex> lock(*msg_m_);
+                // msg_cv_->wait(lock, [&] { return !msg_q_->empty(); });
+                // tmp_ = msg_q_->front();
+                // msg_q_->pop();
+                // lock.unlock();
+
+                unique_lock<std::mutex> lock(gMutex);
+                gCv.wait(lock, [&] { return !gMsgQueue.empty(); });
+                tmp_ = gMsgQueue.front();
+                gMsgQueue.pop();
                 lock.unlock();
 
                 StartWrite(&tmp_);
@@ -96,15 +101,30 @@ public:
                 // Finish(Status::OK);  // 结束本次通信
             }
             WxMsg tmp_; // 如果将它放到 NextWrite 内部，StartWrite 调用时可能已经出了作用域
-            queue<WxMsg> *msg_q_;
-            mutex *msg_m_;
-            condition_variable *msg_cv_;
         };
 
-        return new Getter(msg_q, msg_m, msg_cv);
+        return new Getter();
     }
 
-    grpc::ServerUnaryReactor *SendTextMsg(CallbackServerContext *context, const TextMsg *msg, Response *rsp) override
+    ServerUnaryReactor *RpcDisableRecvMsg(CallbackServerContext *context, const Empty *empty, Response *rsp) override
+    {
+        if (gIsListening) {
+            gIsListening = false;
+            // 发送消息，触发 NextWrite 的 Finish
+            WxMsg wxMsg;
+            unique_lock<std::mutex> lock(gMutex);
+            gMsgQueue.push(wxMsg);
+            lock.unlock();
+            gCv.notify_all();
+        }
+
+        rsp->set_status(0);
+        auto *reactor = context->DefaultReactor();
+        reactor->Finish(Status::OK);
+        return reactor;
+    }
+
+    ServerUnaryReactor *RpcSendTextMsg(CallbackServerContext *context, const TextMsg *msg, Response *rsp) override
     {
         int ret = realSendTextMsg(msg->msg(), msg->receiver(), msg->aters());
         rsp->set_status(ret);
@@ -113,7 +133,7 @@ public:
         return reactor;
     }
 
-    grpc::ServerUnaryReactor *SendImageMsg(CallbackServerContext *context, const ImageMsg *msg, Response *rsp) override
+    ServerUnaryReactor *RpcSendImageMsg(CallbackServerContext *context, const ImageMsg *msg, Response *rsp) override
     {
         int ret = realSendImageMsg(msg->path(), msg->receiver());
         rsp->set_status(ret);
@@ -123,7 +143,7 @@ public:
         return reactor;
     }
 
-    grpc::ServerUnaryReactor *GetMsgTypes(CallbackServerContext *context, const Empty *empty, MsgTypes *rsp) override
+    ServerUnaryReactor *RpcGetMsgTypes(CallbackServerContext *context, const Empty *empty, MsgTypes *rsp) override
     {
         bool ret      = realGetMsgTypes(rsp);
         auto *reactor = context->DefaultReactor();
@@ -136,7 +156,7 @@ public:
         return reactor;
     }
 
-    grpc::ServerUnaryReactor *GetContacts(CallbackServerContext *context, const Empty *empty, Contacts *rsp) override
+    ServerUnaryReactor *RpcGetContacts(CallbackServerContext *context, const Empty *empty, Contacts *rsp) override
     {
         bool ret      = realGetContacts(rsp);
         auto *reactor = context->DefaultReactor();
@@ -149,7 +169,7 @@ public:
         return reactor;
     }
 
-    grpc::ServerUnaryReactor *GetDbNames(CallbackServerContext *context, const Empty *empty, DbNames *rsp) override
+    ServerUnaryReactor *RpcGetDbNames(CallbackServerContext *context, const Empty *empty, DbNames *rsp) override
     {
         bool ret      = realGetDbNames(rsp);
         auto *reactor = context->DefaultReactor();
@@ -162,7 +182,7 @@ public:
         return reactor;
     }
 
-    grpc::ServerUnaryReactor *GetDbTables(CallbackServerContext *context, const String *db, DbTables *rsp) override
+    ServerUnaryReactor *RpcGetDbTables(CallbackServerContext *context, const String *db, DbTables *rsp) override
     {
         bool ret      = realGetDbTables(db->str(), rsp);
         auto *reactor = context->DefaultReactor();
@@ -175,7 +195,7 @@ public:
         return reactor;
     }
 
-    grpc::ServerUnaryReactor *ExecDbQuery(CallbackServerContext *context, const DbQuery *query, DbRows *rsp) override
+    ServerUnaryReactor *RpcExecDbQuery(CallbackServerContext *context, const DbQuery *query, DbRows *rsp) override
     {
         bool ret      = realExecDbQuery(query->db(), query->sql(), rsp);
         auto *reactor = context->DefaultReactor();
@@ -188,8 +208,8 @@ public:
         return reactor;
     }
 
-    grpc::ServerUnaryReactor *AcceptNewFriend(CallbackServerContext *context, const Verification *v,
-                                              Response *rsp) override
+    ServerUnaryReactor *RpcAcceptNewFriend(CallbackServerContext *context, const Verification *v,
+                                           Response *rsp) override
     {
         bool ret      = realAcceptNewFriend(v->v3(), v->v4());
         auto *reactor = context->DefaultReactor();
@@ -203,9 +223,4 @@ public:
 
         return reactor;
     }
-
-private:
-    queue<WxMsg> *msg_q;
-    mutex *msg_m;
-    condition_variable *msg_cv;
 };

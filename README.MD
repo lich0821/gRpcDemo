@@ -2,28 +2,34 @@
 工程结构：
 ```txt
 gRpcDemo
-├── CMakeLists.txt
 ├── LICENSE
 ├── README.MD
-├── build
+├── cpp
+│   ├── CMakeLists.txt
+│   ├── build
+│   └── client.cpp
 ├── proto
 │   └── demo.proto
-└── src
-    ├── client.cpp
-    └── server.cpp
+└── server
+    ├── CMakeLists.txt
+    ├── build
+    ├── main.cpp
+    └── server.hpp
 ```
 
 ## 1 MacOS
+服务端使用 C++ 实现。
 ### 1.1 安装相关包
 ```sh
 brew install grpc cmake openssl@1.1
 ```
 
-### 1.2 生成相关文件
-#### 1.2.1 生成编解码文件
+### 1.2 服务端
+#### 1.2.1 生成相关文件
+##### 1.2.1.1 生成编解码文件
 ```sh
-cd gRpcDemo/proto/
-protoc -I=. --cpp_out=. demo.proto
+cd gRpcDemo/server/
+protoc --cpp_out=. -I=../proto demo.proto
 ```
 
 执行 `tree proto`，可见生成了两个 `*.pb.*` 文件：
@@ -34,9 +40,10 @@ proto
 └── demo.proto
 ```
 
-#### 1.2.2 生成服务接口文件
+##### 1.2.1.2 生成服务接口文件
 ```sh
-protoc -I=. --grpc_out=. --plugin=protoc-gen-grpc="/usr/local/bin/grpc_cpp_plugin" demo.proto
+cd gRpcDemo/server/
+protoc --grpc_out=. --plugin=protoc-gen-grpc="/usr/local/bin/grpc_cpp_plugin" -I=../proto demo.proto
 # 这里需要填写 grpc_cpp_plugin 的绝对路径。安装的时候有提示；也可以通过命令获取：
 # which grpc_cpp_plugin
 ```
@@ -51,9 +58,10 @@ proto
 └── demo.proto
 ```
 
-### 1.3 编译
+#### 1.2.2 编译
 新建 build 目录，进入该目录进行编译：
 ```sh
+cd gRpcDemo/server/
 mkdir build
 cd build
 export PKG_CONFIG_PATH="/usr/local/opt/openssl@1.1/lib/pkgconfig"
@@ -65,15 +73,38 @@ cmake .. # 注意这里有两个点，表示 CMakeLists.txt 在上层目录
 make
 ```
 
-### 1.4 运行
-打开两个终端：
+#### 1.2.3 运行
+打开终端：
 ```sh
-# 一个终端启动服务端
 ./server
 ```
 
+### 1.3 cpp 客户端
+#### 1.3.1 生成相关文件
 ```sh
-# 另一个终端启动客户端
+cd gRpcDemo/cpp/
+protoc --cpp_out=. -I=../proto demo.proto
+protoc --grpc_out=. --plugin=protoc-gen-grpc="/usr/local/bin/grpc_cpp_plugin" -I=../proto demo.proto
+```
+
+#### 1.3.2 编译
+新建 build 目录，进入该目录进行编译：
+```sh
+cd gRpcDemo/cpp/
+mkdir build
+cd build
+export PKG_CONFIG_PATH="/usr/local/opt/openssl@1.1/lib/pkgconfig"
+
+# 生成 Makefile
+cmake .. # 注意这里有两个点，表示 CMakeLists.txt 在上层目录
+
+# 编译
+make
+```
+
+#### 1.3.3 运行
+打开终端：
+```sh
 ./client
 ```
 
