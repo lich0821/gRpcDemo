@@ -108,6 +108,29 @@ make
 ./client
 ```
 
+### 1.4 Python 客户端
+[gRPC Python Quick start](https://grpc.io/docs/languages/python/quickstart/)。
+* 配置环境：
+```sh
+cd gRpcDemo/python
+python -m venv .env
+source .env/bin/activate
+pip install --upgrade pip
+pip install grpcio grpcio-tools
+```
+
+* 生成相关文件：
+```sh
+cd gRpcDemo/python
+python -m grpc_tools.protoc --python_out=. --grpc_python_out=. -I=../proto demo.proto
+```
+
+* 运行
+```sh
+# 启动客户端
+python client.py
+```
+
 ## 2 Windows
 Windows 下连接静态库，动态连接更简单，网上参考资料很多。
 
