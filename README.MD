@@ -207,6 +207,8 @@ cmake --build . --config Release
 ./server
 ```
 
+如果出现中文乱码，将终端编码改成 UTF-8 即可。
+
 ### 2.3 cpp 客户端
 #### 2.3.1 生成相关文件
 ```sh
@@ -233,3 +235,6 @@ cmake --build . --config Release
 ```sh
 ./client
 ```
+
+### 2.4 Python 客户端
+参考 1.4。
