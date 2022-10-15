@@ -5,9 +5,14 @@ RPC Client
 #ifdef _WIN32
 #pragma warning(disable : 4251)
 #pragma execution_character_set("utf-8")
+#define SLEEP(x) Sleep((x))
+#else
+#define SLEEP(x) sleep((x) / 1000)
 #endif
 
 #include <memory>
+#include <signal.h>
+#include <thread>
 
 #include <grpcpp/grpcpp.h>
 
@@ -46,6 +51,13 @@ public:
         static DemoClient instance(grpc::CreateChannel(host_port, grpc::InsecureChannelCredentials()));
         return instance;
     }
+
+    ~DemoClient()
+    {
+        cout << "~DemoClient()" << endl;
+        this->DisableRecvMsg();
+    }
+
     int IsLogin()
     {
         Empty empty;
@@ -71,6 +83,7 @@ public:
 
         return rsp.status();
     }
+
     string GetSelfWxid()
     {
         Empty empty;
@@ -97,7 +110,7 @@ public:
         return rsp.str();
     }
 
-    void GetMessage(function<void(WxMsg &)> msg_handle_cb)
+    void EnableRecvMsg(function<void(WxMsg &)> msg_handle_cb)
     {
         class Reader : public grpc::ClientReadReactor<WxMsg>
         {
@@ -157,8 +170,6 @@ public:
             cout << "GetMessage rpc failed." << endl;
         }
     }
-
-    void EnableRecvMsg(function<void(WxMsg &)> msg_handle_cb) { GetMessage(msg_handle_cb); }
 
     int DisableRecvMsg()
     {
@@ -413,13 +424,19 @@ public:
     }
 
 private:
+    unique_ptr<Demo::Stub> stub_;
     DemoClient(shared_ptr<Channel> channel)
         : stub_(Demo::NewStub(channel))
     {
-        cout << "DemoClient" << endl;
+        cout << "DemoClient()" << endl;
     }
-    unique_ptr<Demo::Stub> stub_;
 };
+
+void my_handler(int s)
+{
+    printf("Caught signal %d\n", s);
+    exit(1);
+}
 
 int OnMsg(WxMsg msg)
 {
@@ -431,6 +448,7 @@ int OnMsg(WxMsg msg)
 int main(int argc, char **argv)
 {
     int ret;
+    signal(SIGINT, my_handler);
     DemoClient &client = DemoClient::Instance("localhost:10086");
 
     ret = client.IsLogin();
@@ -486,7 +504,11 @@ int main(int argc, char **argv)
     cout << "AcceptNewFriend: " << ret << endl;
 
     function<void(WxMsg &)> cb = OnMsg;
-    client.EnableRecvMsg(cb);
+    thread t1                  = thread([&]() { client.EnableRecvMsg(cb); });
+
+    while (true) {
+        SLEEP(1000);
+    }
 
     return 0;
 }
