@@ -69,6 +69,22 @@ void ConsumeMsg(queue<WxMsg> *msg_queue)
     }
 }
 
+int realIsLogin()
+{
+    random_device rd;  // 随机数生成器
+    mt19937 gen(rd()); // Mersenne Twister 算法
+
+    uniform_int_distribution<int> random_i(1000, 5000); // (1000, 5000) 均匀分布
+
+    if (random_i(gen) % 2 == 0) {
+        return 0;
+    }
+
+    return 1;
+}
+
+string realGetSelfWxid() { return "wxid_qwertyuioiuytr"; }
+
 int realSendTextMsg(string msg, string receiver, string aters)
 {
     cout << "To[" << receiver << "]: " << msg << endl;

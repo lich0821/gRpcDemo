@@ -49,6 +49,8 @@ using demo::TextMsg;
 using demo::Verification;
 using demo::WxMsg;
 
+extern int realIsLogin();
+extern string realGetSelfWxid();
 extern int realSendTextMsg(string msg, string receiver, string aters);
 extern int realSendImageMsg(string path, string receiver);
 extern bool realGetMsgTypes(MsgTypes *types);
@@ -67,6 +69,23 @@ class DemoImpl final : public Demo::CallbackService
 {
 public:
     explicit DemoImpl() { }
+    ServerUnaryReactor *RpcIsLogin(CallbackServerContext *context, const Empty *empty, Response *rsp) override
+    {
+        int ret = realIsLogin();
+        rsp->set_status(ret);
+        auto *reactor = context->DefaultReactor();
+        reactor->Finish(Status::OK);
+        return reactor;
+    }
+
+    ServerUnaryReactor *RpcGetSelfWxid(CallbackServerContext *context, const Empty *empty, String *rsp) override
+    {
+        string wxid = realGetSelfWxid();
+        rsp->set_str(wxid);
+        auto *reactor = context->DefaultReactor();
+        reactor->Finish(Status::OK);
+        return reactor;
+    }
 
     ServerWriteReactor<WxMsg> *RpcEnableRecvMsg(CallbackServerContext *context, const Empty *empty) override
     {

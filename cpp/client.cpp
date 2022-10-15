@@ -46,6 +46,57 @@ public:
         static DemoClient instance(grpc::CreateChannel(host_port, grpc::InsecureChannelCredentials()));
         return instance;
     }
+    int IsLogin()
+    {
+        Empty empty;
+        Response rsp;
+        ClientContext context;
+        std::mutex mu;
+        std::condition_variable cv;
+        bool done = false;
+        Status status;
+
+        stub_->async()->RpcIsLogin(&context, &empty, &rsp, [&mu, &cv, &done, &status](Status s) {
+            status = std::move(s);
+            std::lock_guard<std::mutex> lock(mu);
+            done = true;
+            cv.notify_one();
+        });
+        std::unique_lock<std::mutex> lock(mu);
+        cv.wait(lock, [&done] { return done; });
+
+        if (!status.ok()) {
+            cout << "IsLogin rpc failed." << endl;
+        }
+
+        return rsp.status();
+    }
+    string GetSelfWxid()
+    {
+        Empty empty;
+        String rsp;
+        ClientContext context;
+        std::mutex mu;
+        std::condition_variable cv;
+        bool done = false;
+        Status status;
+
+        stub_->async()->RpcGetSelfWxid(&context, &empty, &rsp, [&mu, &cv, &done, &status](Status s) {
+            status = std::move(s);
+            std::lock_guard<std::mutex> lock(mu);
+            done = true;
+            cv.notify_one();
+        });
+        std::unique_lock<std::mutex> lock(mu);
+        cv.wait(lock, [&done] { return done; });
+
+        if (!status.ok()) {
+            cout << "GetSelfWxid rpc failed." << endl;
+        }
+
+        return rsp.str();
+    }
+
     void GetMessage(function<void(WxMsg &)> msg_handle_cb)
     {
         class Reader : public grpc::ClientReadReactor<WxMsg>
@@ -129,7 +180,7 @@ public:
         cv.wait(lock, [&done] { return done; });
 
         if (!status.ok()) {
-            cout << "GetContacts rpc failed." << endl;
+            cout << "DisableRecvMsg rpc failed." << endl;
         }
 
         return rsp.status();
@@ -381,6 +432,11 @@ int main(int argc, char **argv)
 {
     int ret;
     DemoClient &client = DemoClient::Instance("localhost:10086");
+
+    ret = client.IsLogin();
+    cout << "IsLogin: " << ret << endl;
+
+    cout << "Self Wxid: " << client.GetSelfWxid() << endl;
 
     ret = client.SendTextMsg("这是要发送的消息！", "wxid_fdjslajfdlajfldaj", "");
     cout << "SendTextMsg: " << ret << endl;
