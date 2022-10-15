@@ -94,7 +94,8 @@ public:
         public:
             Getter()
             {
-                cout << "New Call" << endl;
+                cout << "客户端开启消息接收" << endl;
+                gIsListening = true;
                 NextWrite();
             }
             void OnDone() override { delete this; }
@@ -103,21 +104,19 @@ public:
         private:
             void NextWrite()
             {
-                // unique_lock<std::mutex> lock(*msg_m_);
-                // msg_cv_->wait(lock, [&] { return !msg_q_->empty(); });
-                // tmp_ = msg_q_->front();
-                // msg_q_->pop();
-                // lock.unlock();
-
                 unique_lock<std::mutex> lock(gMutex);
                 gCv.wait(lock, [&] { return !gMsgQueue.empty(); });
                 tmp_ = gMsgQueue.front();
                 gMsgQueue.pop();
                 lock.unlock();
 
-                StartWrite(&tmp_);
-
-                // Finish(Status::OK);  // 结束本次通信
+                if (gIsListening) {
+                    StartWrite(&tmp_);
+                } else {
+                    cout << "客户端关闭消息接收" << endl;
+                    gMsgQueue = {};     // 清除消息队列
+                    Finish(Status::OK); // 结束本次通信
+                }
             }
             WxMsg tmp_; // 如果将它放到 NextWrite 内部，StartWrite 调用时可能已经出了作用域
         };

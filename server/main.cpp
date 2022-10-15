@@ -29,27 +29,28 @@ void ProduceMsg(queue<WxMsg> *msg_queue)
     int i = 0;
     while (true) {
         int tmp = random_i(gen); // 生成 (1000, 5000) 随机数
+        if (gIsListening) {
+            // 生成消息
+            WxMsg msg;
+            msg.set_is_self(false);
+            msg.set_is_group(tmp % 2 == 0);
+            msg.set_is_self(false);
+            msg.set_is_group(tmp % 2 == 0);
+            msg.set_type(tmp / 100);
+            msg.set_id("Id_" + to_string(i++));
+            msg.set_xml("<xml></xml>");
+            msg.set_sender("wxid_" + to_string(tmp * tmp));
+            msg.set_roomid(to_string(i * tmp) + "@chatroom");
+            msg.set_content("Content" + to_string(tmp + tmp));
 
-        // 生成消息
-        WxMsg msg;
-        msg.set_is_self(false);
-        msg.set_is_group(tmp % 2 == 0);
-        msg.set_is_self(false);
-        msg.set_is_group(tmp % 2 == 0);
-        msg.set_type(tmp / 100);
-        msg.set_id("Id_" + to_string(i++));
-        msg.set_xml("<xml></xml>");
-        msg.set_sender("wxid_" + to_string(tmp * tmp));
-        msg.set_roomid(to_string(i * tmp) + "@chatroom");
-        msg.set_content("Content" + to_string(tmp + tmp));
+            // 推送到队列
+            unique_lock<std::mutex> locker(gMutex);
+            msg_queue->push(msg);
+            locker.unlock();
 
-        // 推送到队列
-        unique_lock<std::mutex> locker(gMutex);
-        msg_queue->push(msg);
-        locker.unlock();
-
-        // 通知各方消息就绪
-        gCv.notify_all();
+            // 通知各方消息就绪
+            gCv.notify_all();
+        }
 
         // 模拟消息到达间隔
         SLEEP(tmp);
