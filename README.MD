@@ -128,7 +128,7 @@ python -m grpc_tools.protoc --python_out=. --grpc_python_out=. -I=../proto demo.
 * 运行
 ```sh
 # 启动客户端
-python client.py
+python main.py
 ```
 
 ## 2 Windows
