@@ -79,6 +79,8 @@ make
 ./server
 ```
 
+**注意**：因生产消息的线程随 `server` 启动，如果一直没有 `client` 连上来消费，会导致队列一直增长。
+
 ### 1.3 cpp 客户端
 #### 1.3.1 生成相关文件
 ```sh
@@ -108,8 +110,6 @@ make
 ./client
 ```
 
-**注意**：因生产消息的线程随 `server` 启动，如果一直没有 `client` 连上来消费，会导致队列一直增长。
-
 ## 2 Windows
 Windows 下连接静态库，动态连接更简单，网上参考资料很多。
 
@@ -134,10 +134,11 @@ vcpkg integrate install
 
 #### 2.1.3 安装 VS2019
 
-### 2.2 生成相关文件
-#### 2.2.1 生成编解码文件
+### 2.2 服务端
+#### 2.2.1 生成相关文件
+##### 2.2.1.1 生成编解码文件
 ```sh
-cd gRpcDemo/proto/
+cd gRpcDemo/server/
 protoc --cpp_out=. -I=../proto demo.proto
 ```
 
@@ -149,8 +150,9 @@ protoc --cpp_out=. -I=../proto demo.proto
 └── demo.proto
 ```
 
-#### 2.2.2 生成服务接口文件
+##### 2.2.1.2 生成服务接口文件
 ```sh
+cd gRpcDemo/server/
 protoc --grpc_out=. --plugin=protoc-gen-grpc="C:\Tools\vcpkg\packages\grpc_x64-windows\tools\grpc\grpc_cpp_plugin.exe" -I=../proto demo.proto
 # 这里需要填写 grpc_cpp_plugin 的绝对路径，去 vcpkg 的安装目录下找。
 ```
@@ -165,28 +167,50 @@ protoc --grpc_out=. --plugin=protoc-gen-grpc="C:\Tools\vcpkg\packages\grpc_x64-w
 └── demo.proto
 ```
 
-### 2.3 编译
+#### 2.2.2 编译
 新建 build 目录，打开 `Developer Command Prompt for VS 2019`，切换到 `build` 目录：
 ```sh
+cd gRpcDemo/server/build
 # 生成 Makefile（32位）
 cmake -A Win32 -S .. -DVCPKG_TARGET_TRIPLET=x86-windows-static -DCMAKE_TOOLCHAIN_FILE=C:/Tools/vcpkg/scripts/buildsystems/vcpkg.cmake
-# 生成 Makefile（32位）
+# 生成 Makefile（64位）
 # cmake -A x64 -S .. -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE=C:/Tools/vcpkg/scripts/buildsystems/vcpkg.cmake
 
 # 编译
 cmake --build . --config Release
 ```
 
-### 2.4 运行
+#### 2.2.3 运行
 打开两个终端：
 ```sh
-# 一个终端启动服务端
 ./server
 ```
 
+**注意**：因生产消息的线程随 `server` 启动，如果一直没有 `client` 连上来消费，会导致队列一直增长。
+
+### 2.3 cpp 客户端
+#### 2.3.1 生成相关文件
 ```sh
-# 另一个终端启动客户端
-./client
+cd gRpcDemo/cpp/
+protoc --cpp_out=. -I=../proto demo.proto
+protoc --grpc_out=. --plugin=protoc-gen-grpc="/usr/local/bin/grpc_cpp_plugin" -I=../proto demo.proto
 ```
 
-**注意**：因生产消息的线程随 `server` 启动，如果一直没有 `client` 连上来消费，会导致队列一直增长。
+#### 2.3.2 编译
+新建 build 目录，打开 `Developer Command Prompt for VS 2019`，切换到 `build` 目录：
+```sh
+cd gRpcDemo/cpp/build
+# 生成 Makefile（32位）
+cmake -A Win32 -S .. -DVCPKG_TARGET_TRIPLET=x86-windows-static -DCMAKE_TOOLCHAIN_FILE=C:/Tools/vcpkg/scripts/buildsystems/vcpkg.cmake
+# 生成 Makefile（64位）
+# cmake -A x64 -S .. -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE=C:/Tools/vcpkg/scripts/buildsystems/vcpkg.cmake
+
+# 编译
+cmake --build . --config Release
+```
+
+#### 2.3.3 运行
+打开终端：
+```sh
+./client
+```
