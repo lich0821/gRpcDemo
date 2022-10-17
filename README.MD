@@ -131,6 +131,14 @@ python -m grpc_tools.protoc --python_out=. --grpc_python_out=. -I=../proto demo.
 python main.py
 ```
 
+### 1.5 Java 客户端
+[gRPC 文件生成工具](https://repo.maven.apache.org/maven2/io/grpc/protoc-gen-grpc-java/)。
+```sh
+cd java/src/main/java/
+protoc --java_out=. -I=../../../../proto demo.proto
+protoc --grpc-java_out=. --plugin=protoc-gen-grpc-java="存放的路径/protoc-gen-grpc-java-1.49.2-osx-x86_64.exe" -I=../../../../proto demo.proto
+```
+
 ## 2 Windows
 Windows 下连接静态库，动态连接更简单，网上参考资料很多。
 
@@ -238,3 +246,13 @@ cmake --build . --config Release
 
 ### 2.4 Python 客户端
 参考 1.4。
+
+### 2.5 Java 客户端
+选择 32 位的 JDK [temurin](https://adoptium.net/zh-CN/temurin/releases)。
+
+[gRPC 文件生成工具](https://repo.maven.apache.org/maven2/io/grpc/protoc-gen-grpc-java/)。
+```sh
+cd java/src/main/java/
+protoc --java_out=. -I=../../../../proto demo.proto
+protoc --grpc-java_out=. --plugin=protoc-gen-grpc-java="存放的路径/protoc-gen-grpc-java-1.49.2-windows-x86_32.exe" -I=../../../../proto demo.proto
+```
